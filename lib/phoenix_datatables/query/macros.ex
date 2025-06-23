@@ -14,7 +14,9 @@ defmodule PhoenixDatatables.Query.Macros do
   end
 
   defp def_order_relation(num) do
-    bindings = bind_number(num)
+    bindings bind_number(num)
+
+    adapter = __MODULE__.get_repo_adapter
 
     quote do
       defp order_relation(queryable, unquote(num), dir, column, nil) do
@@ -23,9 +25,16 @@ defmodule PhoenixDatatables.Query.Macros do
 
       defp order_relation(queryable, unquote(num), dir, column, options) when is_list(options) do
         if dir == :desc && options[:nulls_last] do
-          order_by(queryable, unquote(bindings), [
-            fragment("? DESC NULLS LAST", field(t, ^column))
-          ])
+          case adapter do
+            Ecto.Adapters.Postgres ->
+              order_by(queryable, unquote(bindings), [
+                fragment("? DESC NULLS LAST", field(t, ^column))
+              ])
+            Ecto.Adapters.MyXQL ->
+              fragment("IS NULL(?) ASC, ? DESC", field(t, ^column), field(t, ^column))
+            _ ->
+            raise "PhoenixDatatables: Unsupported Ecto adapter for NULLS LAST ordering: #{inspect adapter}"
+          end
         else
           order_relation(queryable, unquote(num), dir, column, nil)
         end
@@ -35,26 +44,51 @@ defmodule PhoenixDatatables.Query.Macros do
 
   defp def_search_relation(num) do
     bindings = bind_number(num)
+    adapter = __MODULE__.get_repo_adapter
 
     quote do
       defp search_relation(dynamic, unquote(num), attribute, search_term) do
-        dynamic(
-          unquote(bindings),
-          fragment("CAST(? AS TEXT) ILIKE ?", field(t, ^attribute), ^search_term) or ^dynamic
-        )
+        case adapter
+          Ecto.Adapters.Postgres ->
+            dynamic(
+              unquote(bindings),
+              fragment("CAST(? AS TEXT) ILIKE ?", field(t, ^attribute), ^search_term) or ^dynamic
+            )
+          Ecto.Adapters.MyXQL ->
+            lower_search_term = lower(^search_term)
+            dynamic(
+              unquote(bindings),
+              fragment("CAST(? AS CHAR) LIKE ?", field(t, ^attribute), ^lower_search_term) or ^dynamic
+            )
+          _ ->
+            raise "PhoenixDatatables: Unsupported Ecto adapter for search_relation: #{inspect adapter}"
+        end
       end
     end
   end
 
   defp def_search_relation_and(num) do
     bindings = bind_number(num)
+    adapter = __MODULE__.get_repo_adapter
 
     quote do
       defp search_relation_and(dynamic, unquote(num), attribute, search_term) do
-        dynamic(
-          unquote(bindings),
-          fragment("CAST(? AS TEXT) ILIKE ?", field(t, ^attribute), ^search_term) and ^dynamic
-        )
+        case adapter do
+          Ecto.Adapters.Postgres ->
+            dynamic(
+              unquote(bindings),
+              fragment("CAST(? AS TEXT) ILIKE ?", field(t, ^attribute), ^search_term) and ^dynamic
+            )
+          Ecto.Adapters.MyXQL ->
+            lower_search_term = lower(^search_term)
+            dynamic(
+              unquote(bindings),
+              fragment("CAST(? AS CHAR) LIKE ?", field(t, ^attribute), ^lower_search_term) or ^dynamic
+            )
+          _ ->
+            raise "PhoenixDatatables: Unsupported Ecto adapter for search_relation: #{inspect adapter}"ls
+        end
+        
       end
     end
   end
