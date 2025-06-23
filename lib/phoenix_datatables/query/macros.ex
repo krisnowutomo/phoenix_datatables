@@ -15,7 +15,7 @@ defmodule PhoenixDatatables.Query.Macros do
   end
 
   def get_adapter() do
-    case Application.fetch_env(:lib_datatables, :adapter) do
+    case Application.fetch_env(:datatables, :adapter) do
       {:ok, adapter_name} when is_atom(adapter_name) ->
         case adapter_name do
           :postgres -> Ecto.Adapters.Postgres
