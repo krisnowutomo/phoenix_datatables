@@ -61,7 +61,7 @@
   follows:
   ```elixir
   config :datatables, 
-  adapter: :myxql
+  adapter: :myxql #change to :postgres if u use postgres
   ```
 
 ## Controller
