@@ -14,7 +14,7 @@ defmodule PhoenixDatatables.Query.Macros do
     Enum.drop(blanks, 1) ++ [{name, [], Elixir}]
   end
 
-  defp get_adapter do
+  def get_adapter() do
     case Application.fetch_env(:lib_datatables, :adapter) do
       {:ok, adapter} when is_binary(adapter) ->
         adapter
@@ -38,6 +38,7 @@ defmodule PhoenixDatatables.Query.Macros do
 
   defp def_order_relation(num) do
     bindings = bind_number(num)
+    
 
     quote do
       defp order_relation(queryable, unquote(num), dir, column, nil) do
@@ -45,9 +46,8 @@ defmodule PhoenixDatatables.Query.Macros do
       end
 
       defp order_relation(queryable, unquote(num), dir, column, options) when is_list(options) do
-        adapter = get_adapter()
         if dir == :desc && options[:nulls_last] do
-          case adapter do
+          case get_adapter() do
             "postgres" ->
               order_by(queryable, unquote(bindings), [
                 fragment("? DESC NULLS LAST", field(t, ^column))
@@ -68,11 +68,11 @@ defmodule PhoenixDatatables.Query.Macros do
 
   defp def_search_relation(num) do
     bindings = bind_number(num)
+    
 
     quote do
       defp search_relation(dynamic, unquote(num), attribute, search_term) do
-        adapter = get_adapter()
-        case adapter do
+        case get_adapter() do
           "postgres" ->
             dynamic(
               unquote(bindings),
@@ -92,11 +92,11 @@ defmodule PhoenixDatatables.Query.Macros do
 
   defp def_search_relation_and(num) do
     bindings = bind_number(num)
+    
 
     quote do
       defp search_relation_and(dynamic, unquote(num), attribute, search_term) do
-        adapter = get_adapter()
-        case adapter do
+        case get_adapter() do
           "postgres" ->
             dynamic(
               unquote(bindings),
