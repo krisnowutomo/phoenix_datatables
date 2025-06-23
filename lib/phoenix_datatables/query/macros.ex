@@ -16,8 +16,12 @@ defmodule PhoenixDatatables.Query.Macros do
 
   def get_adapter() do
     case Application.fetch_env(:lib_datatables, :adapter) do
-      {:ok, adapter} when is_binary(adapter) ->
-        adapter
+      {:ok, adapter_name} when is_atom(adapter_name) ->
+        case adapter_name do
+          :postgres -> Ecto.Adapters.Postgres
+          :myxql -> Ecto.Adapters.MyXQL
+          _ -> nil
+        end
 
       {:ok, invalid} ->
         raise """
@@ -48,11 +52,11 @@ defmodule PhoenixDatatables.Query.Macros do
       defp order_relation(queryable, unquote(num), dir, column, options) when is_list(options) do
         if dir == :desc && options[:nulls_last] do
           case get_adapter() do
-            "postgres" ->
+            Ecto.Adapters.Postgres ->
               order_by(queryable, unquote(bindings), [
                 fragment("? DESC NULLS LAST", field(t, ^column))
               ])
-            "mysql" ->
+            Ecto.Adapters.MyXQL ->
               order_by(queryable, unquote(bindings), [
                 fragment("IS NULL(?) ASC, ? DESC", field(t, ^column), field(t, ^column))
               ])
@@ -73,12 +77,12 @@ defmodule PhoenixDatatables.Query.Macros do
     quote do
       defp search_relation(dynamic, unquote(num), attribute, search_term) do
         case get_adapter() do
-          "postgres" ->
+          Ecto.Adapters.Postgres ->
             dynamic(
               unquote(bindings),
               fragment("CAST(? AS TEXT) ILIKE ?", field(t, ^attribute), ^search_term) or ^dynamic
             )
-          "mysql" ->
+          Ecto.Adapters.MyXQL ->
             dynamic(
               unquote(bindings),
               fragment("CAST(? AS CHAR) LIKE ?", field(t, ^attribute), ^search_term) or ^dynamic
@@ -97,12 +101,12 @@ defmodule PhoenixDatatables.Query.Macros do
     quote do
       defp search_relation_and(dynamic, unquote(num), attribute, search_term) do
         case get_adapter() do
-          "postgres" ->
+          Ecto.Adapters.Postgres ->
             dynamic(
               unquote(bindings),
               fragment("CAST(? AS TEXT) ILIKE ?", field(t, ^attribute), ^search_term) and ^dynamic
             )
-          "mysql" ->
+          Ecto.Adapters.MyXQL ->
             dynamic(
               unquote(bindings),
               fragment("CAST(? AS CHAR) LIKE ?", field(t, ^attribute), ^search_term) or ^dynamic
