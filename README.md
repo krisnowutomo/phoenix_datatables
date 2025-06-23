@@ -56,6 +56,13 @@
   end
 ```
 
+## Config
+  If you use MySQL database (the MyXQL library), to ensure the search process runs without errors, the configuration file (config.exs) must be set up as  
+  follows:
+  ```config :datatables, 
+  adapter: :myxql
+  ```
+
 ## Controller
 
   The controller is like any other Phoenix json controller - the raw params request
