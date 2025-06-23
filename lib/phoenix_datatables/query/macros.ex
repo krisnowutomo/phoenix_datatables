@@ -61,7 +61,7 @@ defmodule PhoenixDatatables.Query.Macros do
                 fragment("IS NULL(?) ASC, ? DESC", field(t, ^column), field(t, ^column))
               ])
             _ ->
-            raise "PhoenixDatatables: Unsupported Ecto adapter for NULLS LAST ordering: #{inspect adapter}"
+            raise "PhoenixDatatables: Unsupported Ecto adapter for NULLS LAST ordering"
           end
         else
           order_relation(queryable, unquote(num), dir, column, nil)
@@ -88,7 +88,7 @@ defmodule PhoenixDatatables.Query.Macros do
               fragment("CAST(? AS CHAR) LIKE ?", field(t, ^attribute), ^search_term) or ^dynamic
             )
           _ ->
-            raise "PhoenixDatatables: Unsupported Ecto adapter for search_relation: #{inspect adapter}"
+            raise "PhoenixDatatables: Unsupported Ecto adapter for search_relation"
         end
       end
     end
@@ -112,7 +112,7 @@ defmodule PhoenixDatatables.Query.Macros do
               fragment("CAST(? AS CHAR) LIKE ?", field(t, ^attribute), ^search_term) or ^dynamic
             )
           _ ->
-            raise "PhoenixDatatables: Unsupported Ecto adapter for search_relation: #{inspect adapter}"
+            raise "PhoenixDatatables: Unsupported Ecto adapter for search_relation"
         end
         
       end
