@@ -1,4 +1,5 @@
 defmodule PhoenixDatatables.Query.Macros do
+
   @moduledoc false
 
   # make a simple AST representing blank Ecto table bindings so that
@@ -13,10 +14,30 @@ defmodule PhoenixDatatables.Query.Macros do
     Enum.drop(blanks, 1) ++ [{name, [], Elixir}]
   end
 
-  defp def_order_relation(num) do
-    bindings bind_number(num)
+  defp get_adapter do
+    case Application.fetch_env(:lib_datatables, :adapter) do
+      {:ok, adapter} when is_binary(adapter) ->
+        adapter
 
-    adapter = __MODULE__.get_repo_adapter
+      {:ok, invalid} ->
+        raise """
+        Invalid datatables adapter configuration.
+        Expected string, got: #{inspect(invalid)}
+        """
+
+      :error ->
+        raise """
+        Datatables config adapter not found.
+        Please configure it in your config files:
+        
+        config :lib_datatables,
+          adapter: "mysql"  # or "postgres", etc
+        """
+    end
+  end
+
+  defp def_order_relation(num) do
+    bindings = bind_number(num)
 
     quote do
       defp order_relation(queryable, unquote(num), dir, column, nil) do
@@ -24,14 +45,17 @@ defmodule PhoenixDatatables.Query.Macros do
       end
 
       defp order_relation(queryable, unquote(num), dir, column, options) when is_list(options) do
+        adapter = get_adapter()
         if dir == :desc && options[:nulls_last] do
           case adapter do
-            Ecto.Adapters.Postgres ->
+            "postgres" ->
               order_by(queryable, unquote(bindings), [
                 fragment("? DESC NULLS LAST", field(t, ^column))
               ])
-            Ecto.Adapters.MyXQL ->
-              fragment("IS NULL(?) ASC, ? DESC", field(t, ^column), field(t, ^column))
+            "mysql" ->
+              order_by(queryable, unquote(bindings), [
+                fragment("IS NULL(?) ASC, ? DESC", field(t, ^column), field(t, ^column))
+              ])
             _ ->
             raise "PhoenixDatatables: Unsupported Ecto adapter for NULLS LAST ordering: #{inspect adapter}"
           end
@@ -44,21 +68,20 @@ defmodule PhoenixDatatables.Query.Macros do
 
   defp def_search_relation(num) do
     bindings = bind_number(num)
-    adapter = __MODULE__.get_repo_adapter
 
     quote do
       defp search_relation(dynamic, unquote(num), attribute, search_term) do
+        adapter = get_adapter()
         case adapter do
-          Ecto.Adapters.Postgres ->
+          "postgres" ->
             dynamic(
               unquote(bindings),
               fragment("CAST(? AS TEXT) ILIKE ?", field(t, ^attribute), ^search_term) or ^dynamic
             )
-          Ecto.Adapters.MyXQL ->
-            lower_search_term = lower(^search_term)
+          "mysql" ->
             dynamic(
               unquote(bindings),
-              fragment("CAST(? AS CHAR) LIKE ?", field(t, ^attribute), ^lower_search_term) or ^dynamic
+              fragment("CAST(? AS CHAR) LIKE ?", field(t, ^attribute), ^search_term) or ^dynamic
             )
           _ ->
             raise "PhoenixDatatables: Unsupported Ecto adapter for search_relation: #{inspect adapter}"
@@ -69,24 +92,23 @@ defmodule PhoenixDatatables.Query.Macros do
 
   defp def_search_relation_and(num) do
     bindings = bind_number(num)
-    adapter = __MODULE__.get_repo_adapter
 
     quote do
       defp search_relation_and(dynamic, unquote(num), attribute, search_term) do
+        adapter = get_adapter()
         case adapter do
-          Ecto.Adapters.Postgres ->
+          "postgres" ->
             dynamic(
               unquote(bindings),
               fragment("CAST(? AS TEXT) ILIKE ?", field(t, ^attribute), ^search_term) and ^dynamic
             )
-          Ecto.Adapters.MyXQL ->
-            lower_search_term = lower(^search_term)
+          "mysql" ->
             dynamic(
               unquote(bindings),
-              fragment("CAST(? AS CHAR) LIKE ?", field(t, ^attribute), ^lower_search_term) or ^dynamic
+              fragment("CAST(? AS CHAR) LIKE ?", field(t, ^attribute), ^search_term) or ^dynamic
             )
           _ ->
-            raise "PhoenixDatatables: Unsupported Ecto adapter for search_relation: #{inspect adapter}"ls
+            raise "PhoenixDatatables: Unsupported Ecto adapter for search_relation: #{inspect adapter}"
         end
         
       end
