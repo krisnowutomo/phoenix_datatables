@@ -48,7 +48,7 @@ defmodule PhoenixDatatables.Query.Macros do
 
     quote do
       defp search_relation(dynamic, unquote(num), attribute, search_term) do
-        case adapter
+        case adapter do
           Ecto.Adapters.Postgres ->
             dynamic(
               unquote(bindings),
