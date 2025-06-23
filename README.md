@@ -59,7 +59,8 @@
 ## Config
   If you use MySQL database (the MyXQL library), to ensure the search process runs without errors, the configuration file (config.exs) must be set up as  
   follows:
-  ```config :datatables, 
+  ```elixir
+  config :datatables, 
   adapter: :myxql
   ```
 
