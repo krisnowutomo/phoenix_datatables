@@ -41,8 +41,7 @@ defmodule PhoenixDatatables.Query.Macros do
   end
 
   defp def_order_relation(num) do
-    bindings = bind_number(num)
-    
+    bindings = bind_number(num)    
 
     quote do
       defp order_relation(queryable, unquote(num), dir, column, nil) do
@@ -50,8 +49,9 @@ defmodule PhoenixDatatables.Query.Macros do
       end
 
       defp order_relation(queryable, unquote(num), dir, column, options) when is_list(options) do
+        adapters = PhoenixDatatables.Query.Macros.get_adapter()
         if dir == :desc && options[:nulls_last] do
-          case get_adapter() do
+          case adapters do
             Ecto.Adapters.Postgres ->
               order_by(queryable, unquote(bindings), [
                 fragment("? DESC NULLS LAST", field(t, ^column))
@@ -71,12 +71,12 @@ defmodule PhoenixDatatables.Query.Macros do
   end
 
   defp def_search_relation(num) do
-    bindings = bind_number(num)
-    
+    bindings = bind_number(num)    
 
     quote do
       defp search_relation(dynamic, unquote(num), attribute, search_term) do
-        case get_adapter() do
+        adapters = PhoenixDatatables.Query.Macros.get_adapter()
+        case adapters do
           Ecto.Adapters.Postgres ->
             dynamic(
               unquote(bindings),
@@ -95,12 +95,12 @@ defmodule PhoenixDatatables.Query.Macros do
   end
 
   defp def_search_relation_and(num) do
-    bindings = bind_number(num)
-    
+    bindings = bind_number(num)    
 
     quote do
       defp search_relation_and(dynamic, unquote(num), attribute, search_term) do
-        case get_adapter() do
+        adapters = PhoenixDatatables.Query.Macros.get_adapter()
+        case adapters do
           Ecto.Adapters.Postgres ->
             dynamic(
               unquote(bindings),
