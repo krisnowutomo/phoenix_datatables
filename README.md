@@ -60,7 +60,7 @@
   If you use MySQL database (the MyXQL library), to ensure the search process runs without errors, the configuration file (config.exs) must be set up as  
   follows:
   ```elixir
-  config :datatables, 
+  config :phoenix_datatables, 
   adapter: :myxql #change to :postgres if u use postgres
   ```
 
